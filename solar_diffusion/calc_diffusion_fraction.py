@@ -2,6 +2,7 @@
 # Naomichi Fujiuchi (naofujiuchi@gmail.com), September 2022
 # This is an original work by Fujiuchi (MIT license).
 # The scraping code is originated from https://qiita.com/Cyber_Hacnosuke/items/122cec35d299c4d01f10 and https://www.gis-py.com/entry/scraping-weather-data
+# The meteorological data is obtained from the website of Japan Meteorological Agency (気象庁)
 #%%
 import csv
 import copy
@@ -14,7 +15,7 @@ from bs4 import BeautifulSoup
 
 # 元のクラス。気象庁1時間ごとデータをダウンロード -> 1時間ごとのdiffusion fractionを計算。データが大きいのでインスタンスを作らない。
 class Diffusion:
-    BASE_URL = "http://www.data.jma.go.jp/obd/stats/etrn/view/hourly_s1.php?prec_no=%s&block_no=%s&year=%s&month=%s&day=%s&view="
+    BASE_URL = "http://www.data.jma.go.jp/obd/stats/etrn/view/hourly_%s1.php?prec_no=%s&block_no=%s&year=%s&month=%s&day=%s&view="
 
     @staticmethod
     def str2float(str):
@@ -23,8 +24,32 @@ class Diffusion:
         except:
             return 0.0
 
+    @staticmethod
+    def jma_data_type(prec_no, block_no):
+        """
+        Parameters
+        ----------
+        data_type: string
+            "a" (amedas data) or "s" (sokkoujyo data)
+        prec_no: string
+            Text string of 2 digits number of each prefecture
+        block_no: string
+            Text string of 4 or 5 digits number of each region
+        """
+        data_type = 
+        return(data_type)
+
     def jma_hourly_data_per_day(self, prec_no, block_no, year, month, day):
-        r = requests.get(self.BASE_URL%(prec_no, block_no, year, month, day))
+        """
+        Parameters
+        ----------
+        prec_no: string
+            Text string of 2 digits number of each prefecture
+        block_no: string
+            Text string of 4 or 5 digits number of each region
+        """
+        data_type = self.jma_data_type(prec_no=prec_no, block_no=block_no)
+        r = requests.get(self.BASE_URL%(data_type, prec_no, block_no, year, month, day))
         r.encoding = r.apparent_encoding
         soup = BeautifulSoup(r.text)
         trs = soup.find("table", { "class" : "data2_s" })
@@ -69,7 +94,7 @@ class Diffusion:
         return all_data
 
     # 入力されたprec_noおよびblock_noをもとにcsvからその地の緯度・経度を取得し，散乱光割合を計算
-
+    def 
 
 # # 元のクラスを継承したCSV書き出しのクラス（引数：ファイルパス，return無し）
 # class CSVDiffusion(Diffusion):
