@@ -3,6 +3,7 @@
 # This is an original work by Fujiuchi (MIT license).
 # The scraping code is originated from https://qiita.com/Cyber_Hacnosuke/items/122cec35d299c4d01f10 and https://www.gis-py.com/entry/scraping-weather-data
 # The meteorological data is obtained from the website of Japan Meteorological Agency (気象庁)
+import os
 from math import pi
 import time
 import datetime
@@ -35,7 +36,7 @@ class Diffusion:
         block_no: string
             Text string of 4 or 5 digits number of each region
         """
-        jp = pd.read_csv('../data/jma_prec_block.csv', dtype={'prec_no':'str','block_no':'str'})
+        jp = pd.read_csv(os.path.join(os.path.dirname(__file__), 'jma_prec_block.csv'), dtype={'prec_no':'str','block_no':'str'})
         jp_extract = jp.query('prec_no==@prec_no&block_no==@block_no')
         return(jp_extract)
 
@@ -52,7 +53,7 @@ class Diffusion:
         day: int
         """
         jma_place_extract = self.jma_place(prec_no, block_no)
-        data_type = jma_place_extract['data_type'][1]
+        data_type = jma_place_extract['data_type'][0]
         r = requests.get(self.BASE_URL%(data_type, prec_no, block_no, str(year), str(month).zfill(2), str(day).zfill(2)))
         r.encoding = r.apparent_encoding
         soup = BeautifulSoup(r.text)
@@ -94,7 +95,7 @@ class Diffusion:
         # Obtain hourly JMA data during the period from start_date to end_date
         # pressure_ground [hPa], pressure_sealevel [hPa], precipitation_rain [mm], temperature_air [C], temperature_condensation [C], pressure_vapor [hPa], humidity_relative [%], wind_speed [m s-1], wind_direction, hour_radiation [h], radiation_solar [MJ m-2], precipitation_snow [cm], height_snow [cm]
         jma_place_extract = self.jma_place(prec_no, block_no)
-        data_type = jma_place_extract['data_type'][1]
+        data_type = jma_place_extract['data_type'][0]
         if data_type == "s": # sokkoujyo data
             fields = ["date", "hour", "pressure_ground", "pressure_sealevel", "precipitation_rain", "temperature_air", "temperature_condensation", "pressure_vapor", "humidity_relative", "wind_speed", "wind_direction", "hour_radiation", "radiation_solar", "precipitation_snow", "height_snow"]
         if data_type == "a": # amedas data
@@ -150,7 +151,7 @@ class Diffusion:
         """
         I0 = 1366 # Solar constant [W m-2]
         h = pysolar.solar.get_altitude(latitude, longitude, time) / 180 * math.pi
-        if h > 0:
+        if h > 0 and irradiation > 0:
             def objective(x):
                 value = abs(I0 * x**(1/math.sin(h)) * math.sin(h) + I0 * math.sin(h) * (0.8672 + 0.7505 * math.sin(h)) * x**(0.421/math.sin(h)) * (1 - x**(1/math.sin(h)))**2.277 / (1 + (0.8672 + 0.7505 * math.sin(h)) * x**(0.421/math.sin(h)) * (1 - x**(1/math.sin(h)))**2.277) - irradiation)
                 return(value)
@@ -193,6 +194,7 @@ class Diffusion:
         df['hour'] = df['hour'].astype(int) - 1
         df['timestamp'] = pd.to_datetime(df['year'].astype(str) + '-' + df['month'].astype(str) + '-' + df['day'].astype(str) + ' ' + df['hour'].astype(str) + ':30:00')
         df.timestamp = df.timestamp.dt.tz_localize(timezone_str)
+        df.radiation_solar = df.radiation_solar * 10**6 / 3600 # Convert the unit of solar radiation [MJ m-2] to [W m-2] (= [J m-2 s-1])
         lightparams = df.apply(lambda row: self.diffused_light(latitude=latitude,longitude=longitude,time=row['timestamp'].to_pydatetime(),irradiation=row['radiation_solar']), axis=1)
         df[['P','FRACDF']] = pd.DataFrame(lightparams.tolist())
         return(df)
