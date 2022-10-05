@@ -18,6 +18,7 @@ from scipy.optimize import minimize_scalar
 
 class Diffusion:
     BASE_URL = "http://www.data.jma.go.jp/obd/stats/etrn/view/hourly_%s1.php?prec_no=%s&block_no=%s&year=%s&month=%s&day=%s&view="
+    CURRENT_DIR = os.path.dirname(__file__)
 
     @staticmethod
     def str2float(str):
@@ -26,8 +27,7 @@ class Diffusion:
         except:
             return 0.0
 
-    @staticmethod
-    def jma_place(prec_no, block_no):
+    def jma_place(self, prec_no, block_no):
         """
         Parameters
         ----------
@@ -36,7 +36,7 @@ class Diffusion:
         block_no: string
             Text string of 4 or 5 digits number of each region
         """
-        jp = pd.read_csv(os.path.join(os.path.dirname(__file__), 'jma_prec_block.csv'), dtype={'prec_no':'str','block_no':'str'})
+        jp = pd.read_csv(os.path.join(self.CURRENT_DIR, 'jma_prec_block.csv'), dtype={'prec_no':'str','block_no':'str'})
         jp_extract = jp.query('prec_no==@prec_no&block_no==@block_no')
         return(jp_extract)
 
