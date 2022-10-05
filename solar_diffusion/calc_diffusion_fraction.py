@@ -4,8 +4,6 @@
 # The scraping code is originated from https://qiita.com/Cyber_Hacnosuke/items/122cec35d299c4d01f10 and https://www.gis-py.com/entry/scraping-weather-data
 # The meteorological data is obtained from the website of Japan Meteorological Agency (気象庁)
 #%%
-import csv
-import copy
 from math import pi
 import time
 import datetime
@@ -15,7 +13,6 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import pysolar
-from tzwhere import tzwhere
 from timezonefinder import TimezoneFinder
 from scipy.optimize import minimize_scalar
 #%%
@@ -116,30 +113,7 @@ class Diffusion:
             time.sleep(0.5) # Wait for 0.5 second everytime before accessing the next JMA data
         return all_data # return 2D list object of hourly data in a specific period
 
-    def output(self, prec_no, block_no, start_date, end_date):
-        # Add timestamp with timezone, solar altitude, and diffusion fraction to the data table
-        jma_place_extract = self.jma_place(prec_no, block_no)
-        longitude = jma_place_extract['longitude'][1]
-        latitude = jma_place_extract['latitude'][1]
-        # tzwhere = tzwhere.tzwhere()
-        # timezone_str = tzwhere.tzNameAt(latitude, longitude)
-        tf = TimezoneFinder()  # reuse
-        timezone_str = tf.timezone_at(lng=longitude, lat=latitude)
-        all_data = self.jma_hourly_data(prec_no, block_no, start_date, end_date)
-        df = pd.DataFrame(all_data[1:], columns=all_data[0])
-        # Because the data is the 1-hour data before the hour, timestamp is set to the time half-hour before the hour. (e.g., when hour is 1, timestamp is 0:30)
-        df['year'] = df['date'].apply(lambda x: x.year)
-        df['month'] = df['date'].apply(lambda x: x.month)
-        df['day'] = df['date'].apply(lambda x: x.day)
-        df['hour'] = df['hour'].astype(int) - 1
-        df['timestamp'] = pd.to_datetime(df['year'].astype(str) + '-' + df['month'].astype(str) + '-' + df['day'].astype(str) + ' ' + df['hour'].astype(str) + ':30:00')
-        df.timestamp = df.timestamp.dt.tz_localize(timezone_str)
-
-        self.diffused_light(latitude=latitude, longitude=longitude, time=, irradiation=)
-
-    # 入力されたprec_noおよびblock_noをもとにcsvからその地の緯度・経度を取得し，散乱光割合を計算
     @staticmethod
-#%%        
     def diffused_light(latitude, longitude, time, irradiation): 
         """
         Parameters
@@ -191,35 +165,37 @@ class Diffusion:
             return([P, FRACDF])
         else: 
             return([np.nan, np.nan])
-#%%
-# INITENV = function(INITDATE, ENDDATE){
-#   I0 = 1366 # 太陽定数 (大気外法線面日射量) [W m-2]
-#   LATTSUKUBA = 36
-#   LONTSUKUBA = 140
-#   df_FRACDF = 
-#     read.csv(paste0(wd, "jma_tsukuba_irradiation_20180301_20180701.csv")) %>% # つくばの全天日射量のデータ (2018-03-01〜2018-07-01)
-#     dplyr::mutate(timestamp = as.POSIXct(timestamp) - 1800) %>%
-#     dplyr::rename(TIMESTAMP = timestamp, 
-#                   PARJMA = irradiation_MJ_m2) %>% # 気象庁全天日射 (前1時間) [MJ m-2 h-1]
-#     dplyr::mutate(PARJMA = PARJMA * 10^6 / 3600, # 気象庁全天日射 (前1時間) [W m-2]
-#                   h = oce::sunAngle(t = TIMESTAMP, longitude = LONTSUKUBA, latitude = LATTSUKUBA)$altitude / 180 * pi) %>%
-#     dplyr::filter(h > 0 & PARJMA > 0) %>%
-#     dplyr::rowwise() %>%
-#     dplyr::mutate(P = optimise(interval=c(0,1), f = function(x){abs(I0 * x^(1/sin(h)) * sin(h) + I0 * sin(h) * (0.8672 + 0.7505 * sin(h)) * x^(0.421/sin(h)) * (1 - x^(1/sin(h)))^2.277 / (1 + (0.8672 + 0.7505 * sin(h)) * x^(0.421/sin(h)) * (1 - x^(1/sin(h)))^2.277) - PARJMA)})$minimum) %>% # 大気透過率 [-]
-#     dplyr::mutate(FRACDF = 1 - P^(1/sin(h)) / (P^(1/sin(h)) + (0.8672 + 0.7505 * sin(h)) * P^(0.421/sin(h)) * (1 - P^(1/sin(h)))^2.277 / (1 + (0.8672 + 0.7505 * sin(h)) * P^(0.421/sin(h)) * (1 - P^(1/sin(h)))^2.277))) %>%
-#     plyr::join(data.frame(TIMESTAMP = seq(from = as.POSIXct(paste0(INITDATE, " 00:00:00")), to = as.POSIXct(paste0(ENDDATE+1, " 00:00:00")), by = 600)), .) %>%
-#     dplyr::mutate(FRACDF = zoo::na.approx(FRACDF, rule = 2))
 
-# # 元のクラスを継承したCSV書き出しのクラス（引数：ファイルパス，return無し）
-# class CSVDiffusion(Diffusion):
-    def write_csv(self, file, prec_no, block_no, start_date, end_date):
-        all_data = self.jma_hourly_data(prec_no, block_no, start_date, end_date)
-        with open(file, 'w') as f:
-            writer = csv.writer(f, lineterminator='\n')
-            writer.writerows(all_data)
+    def output(self, prec_no, block_no, start_date, end_date):
+        """
+        Parameters
+        ----------
+        prec_no: str
+            Text string of 2 digits number of each prefecture
+        block_no: str
+            Text string of 4 or 5 digits number of each region
+        start_date: datetime.date
+        end_data: datetime.date
 
-# # 元のクラスを継承したオブジェクト作成のクラス（return有り（pandasデータで返す？））
-# class ObjectDiffusion(Diffusion):
-    def return_table(self, prec_no, block_no, start_date, end_date):
+        Output
+        ----------
+        df: pandas.DataFrame
+        """
+        # Add timestamp with timezone, solar altitude, and diffusion fraction to the data table
+        jma_place_extract = self.jma_place(prec_no, block_no)
+        longitude = jma_place_extract['longitude'][0]
+        latitude = jma_place_extract['latitude'][0]
+        tf = TimezoneFinder()  # reuse
+        timezone_str = tf.timezone_at(lng=longitude, lat=latitude)
         all_data = self.jma_hourly_data(prec_no, block_no, start_date, end_date)
-        return(all_data)
+        df = pd.DataFrame(all_data[1:], columns=all_data[0])
+        # Because the data is the 1-hour data before the hour, timestamp is set to the time half-hour before the hour. (e.g., when hour is 1, timestamp is 0:30)
+        df['year'] = df['date'].apply(lambda x: x.year)
+        df['month'] = df['date'].apply(lambda x: x.month)
+        df['day'] = df['date'].apply(lambda x: x.day)
+        df['hour'] = df['hour'].astype(int) - 1
+        df['timestamp'] = pd.to_datetime(df['year'].astype(str) + '-' + df['month'].astype(str) + '-' + df['day'].astype(str) + ' ' + df['hour'].astype(str) + ':30:00')
+        df.timestamp = df.timestamp.dt.tz_localize(timezone_str)
+        lightparams = df.apply(lambda row: self.diffused_light(latitude=latitude,longitude=longitude,time=row['timestamp'].to_pydatetime(),irradiation=row['radiation_solar']), axis=1)
+        df[['P','FRACDF']] = pd.DataFrame(lightparams.tolist())
+        return(df)
