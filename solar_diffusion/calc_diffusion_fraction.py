@@ -3,7 +3,6 @@
 # This is an original work by Fujiuchi (MIT license).
 # The scraping code is originated from https://qiita.com/Cyber_Hacnosuke/items/122cec35d299c4d01f10 and https://www.gis-py.com/entry/scraping-weather-data
 # The meteorological data is obtained from the website of Japan Meteorological Agency (気象庁)
-#%%
 from math import pi
 import time
 import datetime
@@ -15,9 +14,7 @@ from bs4 import BeautifulSoup
 import pysolar
 from timezonefinder import TimezoneFinder
 from scipy.optimize import minimize_scalar
-#%%
 
-# 元のクラス。気象庁1時間ごとデータをダウンロード -> 1時間ごとのdiffusion fractionを計算。データが大きいのでインスタンスを作らない。
 class Diffusion:
     BASE_URL = "http://www.data.jma.go.jp/obd/stats/etrn/view/hourly_%s1.php?prec_no=%s&block_no=%s&year=%s&month=%s&day=%s&view="
 
