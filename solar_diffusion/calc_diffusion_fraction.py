@@ -61,7 +61,7 @@ class Diffusion:
         day: int
         """
         jma_place_extract = self.jma_place(prec_no, block_no, csvdir)
-        data_type = jma_place_extract['data_type'][0]
+        data_type = jma_place_extract['data_type'].iloc[0]
         r = requests.get(self.BASE_URL%(data_type, prec_no, block_no, str(year), str(month).zfill(2), str(day).zfill(2)))
         r.encoding = r.apparent_encoding
         soup = BeautifulSoup(r.text)
@@ -103,7 +103,7 @@ class Diffusion:
         # Obtain hourly JMA data during the period from start_date to end_date
         # pressure_ground [hPa], pressure_sealevel [hPa], precipitation_rain [mm], temperature_air [C], temperature_condensation [C], pressure_vapor [hPa], humidity_relative [%], wind_speed [m s-1], wind_direction, hour_radiation [h], radiation_solar [MJ m-2], precipitation_snow [cm], height_snow [cm]
         jma_place_extract = self.jma_place(prec_no, block_no, csvdir)
-        data_type = jma_place_extract['data_type'][0]
+        data_type = jma_place_extract['data_type'].iloc[0]
         if data_type == "s": # sokkoujyo data
             fields = ["date", "hour", "pressure_ground", "pressure_sealevel", "precipitation_rain", "temperature_air", "temperature_condensation", "pressure_vapor", "humidity_relative", "wind_speed", "wind_direction", "hour_radiation", "radiation_solar", "precipitation_snow", "height_snow"]
         if data_type == "a": # amedas data
@@ -189,8 +189,8 @@ class Diffusion:
         """
         # Add timestamp with timezone, solar altitude, and diffusion fraction to the data table
         jma_place_extract = self.jma_place(prec_no, block_no, csvdir)
-        longitude = jma_place_extract['longitude'][0]
-        latitude = jma_place_extract['latitude'][0]
+        longitude = jma_place_extract['longitude'].iloc[0]
+        latitude = jma_place_extract['latitude'].iloc[0]
         tf = TimezoneFinder()  # reuse
         timezone_str = tf.timezone_at(lng=longitude, lat=latitude)
         all_data = self.jma_hourly_data(prec_no, block_no, start_date, end_date, csvdir)
