@@ -3,7 +3,6 @@
 # This is an original work by Fujiuchi (MIT license).
 # The scraping code is originated from https://qiita.com/Cyber_Hacnosuke/items/122cec35d299c4d01f10 and https://www.gis-py.com/entry/scraping-weather-data
 # The meteorological data is obtained from the website of Japan Meteorological Agency (気象庁)
-#%%
 import os
 from math import pi
 import time
@@ -16,7 +15,6 @@ from bs4 import BeautifulSoup
 import pysolar
 from timezonefinder import TimezoneFinder
 from scipy.optimize import minimize_scalar
-#%%
 
 class Diffusion:
     BASE_URL = "http://www.data.jma.go.jp/obd/stats/etrn/view/hourly_%s1.php?prec_no=%s&block_no=%s&year=%s&month=%s&day=%s&view="
@@ -202,7 +200,7 @@ class Diffusion:
         df['hour'] = df['hour'].astype(int) - 1
         df['timestamp'] = pd.to_datetime(df['year'].astype(str) + '-' + df['month'].astype(str) + '-' + df['day'].astype(str) + ' ' + df['hour'].astype(str) + ':30:00')
         df.timestamp = df.timestamp.dt.tz_localize(timezone_str)
-        df.radiation_solar = df.radiation_solar * 10**6 / 3600 # Convert the unit of solar radiation [MJ m-2] to [W m-2] (= [J m-2 s-1])
+        df.radiation_solar = df.radiation_solar * 10**6 / 3600 # Convert the unit of solar radiation [MJ m-2 h-1] to [W m-2] (= [J m-2 s-1])
         lightparams = df.apply(lambda row: self.diffused_light(latitude=latitude,longitude=longitude,time=row['timestamp'].to_pydatetime(),irradiation=row['radiation_solar']), axis=1)
         df[['P','FRACDF']] = pd.DataFrame(lightparams.tolist())
         return(df)
